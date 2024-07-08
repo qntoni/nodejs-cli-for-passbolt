@@ -19,9 +19,8 @@ This is a node.js API CLI designed to interact with Passbolt. With this client, 
     npm install 
     ```
    
-3. Adjust `./config/default.js` file to point the right API endpoint and set up other revelant configurations.
-4. Update `./env` with the correct private key passphrase and server url
-5. Import the private key file to `./config/key/`
+3. Update `./env` with the correct private key passphrase and server url
+4. Import the private key file to `./config/key/`
 
 ## Usage
 
@@ -33,14 +32,12 @@ This is a node.js API CLI designed to interact with Passbolt. With this client, 
 - Authentication with GPG
 - Choose actions
   - Display all resources
+  - Remove recursive permissions on a specific directory
 
 ## Warning
 
-This project disables SSL/TLS verification (`NODE_TLS_REJECT_UNAUTHORIZED`) due to development constraints. If you are not using a self-signed certificate, do **NOT** use this setting in a production environment.
+This project should not be used on a production environment as of right now.
 
 ## Disclaimer
 
 This project is not affiliated, associated, authorized, endorsed by or in any way officially connected with [Passbolt](https://github.com/passbolt) or any subsidiaries or its affiliates. 
-
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
