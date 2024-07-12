@@ -53,7 +53,7 @@ In order to remove permissions from a specific folders (which works for recursiv
 
 
 ## Troubleshooting
-An `./app.log` should be created and updated everything you are running the CLI. If you encounter any issues with this, feel free to share it with whom it belongs.
+An `./app.log` should be created and updated every time you are running the CLI. If you encounter any issues with this, feel free to share it with whom it belongs.
 
 ## Disclaimer
 
