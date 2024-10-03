@@ -1,16 +1,16 @@
 import fetch from 'node-fetch';
 import httpsAgent from '../lib/httpsAgent.js';
+import logger from "../lib/logger.js";
 
 class ResourceManager {
     constructor(serverUrl, sessionCookie, csrfToken, logger) {
         this.serverUrl = serverUrl;
         this.sessionCookie = sessionCookie;
         this.csrfToken = csrfToken;
-        this.logger = logger;
     }
 
     async getAllResources() {
-        this.logger.info("Fetching all resources...");
+        logger.info("Fetching all resources...");
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
@@ -28,7 +28,7 @@ class ResourceManager {
     }
 
     async getAllFolders() {
-        this.logger.info("Fetching all folders...");
+        logger.info("Fetching all folders...");
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
@@ -46,7 +46,7 @@ class ResourceManager {
     }
 
     async getFolderPermissions(folderId) {
-        this.logger.info(`Fetching permissions for folder: ${folderId}`);
+        logger.info(`Fetching permissions for folder: ${folderId}`);
         const url = `${this.serverUrl}/folders.json?api-version=v2&filter[has-id][]=${folderId}&contain[permission]=1&contain[permissions.user.profile]=1&contain[permissions.group]=1`;
         const headers = {
             'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ class ResourceManager {
     }
 
     async getResourcesInFolder(folderId) {
-        this.logger.info(`Fetching resources in folder: ${folderId}`);
+        logger.info(`Fetching resources in folder: ${folderId}`);
         const url = `${this.serverUrl}/resources.json?api-version=v2&filter[has-folder-id][]=${folderId}`;
         const headers = {
             'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ class ResourceManager {
     }
 
     async getResourcePermissions(resourceId) {
-        this.logger.info(`Fetching permissions for resource: ${resourceId}`);
+        logger.info(`Fetching permissions for resource: ${resourceId}`);
         const url = `${this.serverUrl}/resources.json?api-version=v2&filter[has-id][]=${resourceId}&contain[permission]=1&contain[permissions.user.profile]=1&contain[permissions.group]=1`;
         const headers = {
             'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ class ResourceManager {
     }
 
     async updatePermissions(entity, permissionsToRemove, entityType) {
-        this.logger.info(`Updating permissions for ${entityType} ${entity.id}`);
+        logger.info(`Updating permissions for ${entityType} ${entity.id}`);
         const url = `${this.serverUrl}/share/${entityType}/${entity.id}.json?api-version=v2`;
         const headers = {
             'Content-Type': 'application/json',
@@ -135,11 +135,11 @@ class ResourceManager {
     }
 
     async removePermissionsFromGroup(folderName, groupName) {
-        this.logger.info(`Removing permissions from group ${groupName} in folder ${folderName}`);
+        logger.info(`Removing permissions from group ${groupName} in folder ${folderName}`);
         const foldersResponse = await this.getAllFolders();
         const folders = foldersResponse.body;
 
-        this.logger.info(`Available folders: ${folders.map(folder => folder.name).join(', ')}`);
+        logger.info(`Available folders: ${folders.map(folder => folder.name).join(', ')}`);
 
         // Filter folders by name (case insensitive)
         const targetFolders = folders.filter(folder => folder.name.toLowerCase() === folderName.toLowerCase());
@@ -152,31 +152,31 @@ class ResourceManager {
             await this.processFolder(folder, groupName);
         }
 
-        this.logger.info('Permissions updated successfully.');
+        logger.info('Permissions updated successfully.');
     }
 
     async processFolder(folder, groupToRemove) {
-        this.logger.info(`Processing folder: ${folder.name} (${folder.id})`);
+        logger.info(`Processing folder: ${folder.name} (${folder.id})`);
 
         // Process folder permissions
         try {
             const folderPermissionsResponse = await this.getFolderPermissions(folder.id);
             const permissions = folderPermissionsResponse.body[0].permissions;
-            this.logger.info(`Permissions in folder ${folder.name}: ${JSON.stringify(permissions)}`);
+            logger.info(`Permissions in folder ${folder.name}: ${JSON.stringify(permissions)}`);
             const permissionsToRemove = permissions.filter(permission =>
                 (permission.group ? permission.group.name : '') === groupToRemove
             );
 
-            this.logger.info(`Permissions to remove in folder ${folder.name}: ${JSON.stringify(permissionsToRemove)}`);
+            logger.info(`Permissions to remove in folder ${folder.name}: ${JSON.stringify(permissionsToRemove)}`);
 
             if (permissionsToRemove.length > 0) {
                 await this.updatePermissions(folder, permissionsToRemove, 'folder');
-                this.logger.info(`Updated permissions for folder ${folder.name}`);
+                logger.info(`Updated permissions for folder ${folder.name}`);
             } else {
-                this.logger.info(`No permissions to remove for folder ${folder.name}`);
+                logger.info(`No permissions to remove for folder ${folder.name}`);
             }
         } catch (error) {
-            this.logger.error(`Error processing folder ${folder.id}: ${error.message}`);
+            logger.error(`Error processing folder ${folder.id}: ${error.message}`);
         }
 
         // Process resources in the folder
@@ -185,38 +185,38 @@ class ResourceManager {
             const resources = resourcesResponse.body;
 
             for (const resource of resources) {
-                this.logger.info(`Resource ${resource.name} (${resource.id}) data: ${JSON.stringify(resource)}`);
+                logger.info(`Resource ${resource.name} (${resource.id}) data: ${JSON.stringify(resource)}`);
                 // Ensure the resource is in the specified folder
                 if (resource.folder_parent_id === folder.id) {
                     await this.processResource(resource, groupToRemove);
                 } else {
-                    this.logger.info(`Skipping resource ${resource.name} (${resource.id}) as it is not in the target folder`);
+                    logger.info(`Skipping resource ${resource.name} (${resource.id}) as it is not in the target folder`);
                 }
             }
         } catch (error) {
-            this.logger.error(`Error processing resources in folder ${folder.id}: ${error.message}`);
+            logger.error(`Error processing resources in folder ${folder.id}: ${error.message}`);
         }
     }
 
     async processResource(resource, groupToRemove) {
-        this.logger.info(`Processing resource: ${resource.name} (${resource.id})`);
+        logger.info(`Processing resource: ${resource.name} (${resource.id})`);
 
         try {
             const resourcePermissionsResponse = await this.getResourcePermissions(resource.id);
             const resourcePermissions = resourcePermissionsResponse.body[0].permissions;
 
-            this.logger.info(`Resource Permissions for ${resource.name}: ${JSON.stringify(resourcePermissions)}`);
+            logger.info(`Resource Permissions for ${resource.name}: ${JSON.stringify(resourcePermissions)}`);
 
             const groupNames = resourcePermissions.map(permission => permission.group ? permission.group.name : 'N/A');
-            this.logger.info(`Groups in permissions: ${groupNames}`);
+            logger.info(`Groups in permissions: ${groupNames}`);
 
-            this.logger.info(`Group to remove: ${groupToRemove}`);
+            logger.info(`Group to remove: ${groupToRemove}`);
 
             const permissionsToRemove = resourcePermissions.filter(permission =>
                 (permission.group ? permission.group.name : '') === groupToRemove
             );
 
-            this.logger.info(`Permissions to remove for resource ${resource.name}: ${JSON.stringify(permissionsToRemove)}`);
+            logger.info(`Permissions to remove for resource ${resource.name}: ${JSON.stringify(permissionsToRemove)}`);
 
             if (permissionsToRemove.length > 0) {
                 // Simulate sharing to ensure it's safe
@@ -224,17 +224,17 @@ class ResourceManager {
 
                 // Update permissions if simulation is successful
                 await this.updatePermissions(resource, permissionsToRemove, 'resource');
-                this.logger.info(`Updated permissions for resource ${resource.name}`);
+                logger.info(`Updated permissions for resource ${resource.name}`);
             } else {
-                this.logger.info(`No permissions to remove for resource ${resource.name}`);
+                logger.info(`No permissions to remove for resource ${resource.name}`);
             }
         } catch (error) {
-            this.logger.error(`Error processing resource ${resource.id}: ${error.message}`);
+            logger.error(`Error processing resource ${resource.id}: ${error.message}`);
         }
     }
 
     async simulateSharing(resourceId, permissionsToRemove) {
-        this.logger.info(`Simulating sharing for resource ${resourceId}`);
+        logger.info(`Simulating sharing for resource ${resourceId}`);
         const url = `${this.serverUrl}/share/simulate/resource/${resourceId}.json?api-version=v2`;
         const headers = {
             'Content-Type': 'application/json',
