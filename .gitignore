@@ -1,3 +1,4 @@
 node_modules
-config/key/private.key
+config/key/**
 .env
+logs/**
