@@ -1,14 +1,15 @@
 import inquirer from 'inquirer';
 
-export async function promptUserAction() {
+export async function promptMainMenu() {
     const { action } = await inquirer.prompt([
         {
             type: 'list',
             name: 'action',
-            message: 'Please select an action:',
+            message: 'Please select a category:',
             choices: [
-                { name: 'View all available resources', value: 'all_resources' },
-                { name: 'Modify permissions for a group in a specific folder', value: 'remove_permissions' },
+                { name: 'Actions on Resources', value: 'resources' },
+                { name: 'Permissions Action', value: 'permissions' },
+                { name: 'Logout', value: 'logout' }
             ]
         }
     ]);
@@ -29,4 +30,36 @@ export async function promptRemovePermissions() {
         }
     ]);
     return { subfolder, groupToRemove };
+}
+
+export async function promptResourceMenu() {
+    const { resourceAction } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'resourceAction',
+            message: 'Please select an action on resources:',
+            choices: [
+                { name: 'Display all resources', value: 'all_resources' },
+                { name: 'Search a resource by name', value: 'search_by_name' },
+                { name: 'Search a resource by date', value: 'search_by_date' },
+                { name: 'Back to main menu', value: 'back' }
+            ]
+        }
+    ]);
+    return resourceAction;
+}
+
+export async function promptPermissionMenu() {
+    const { permissionAction } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'permissionAction',
+            message: 'Please select an action for permissions:',
+            choices: [
+                { name: 'Remove permissions from a group', value: 'remove_permissions' },
+                { name: 'Back to main menu', value: 'back' }
+            ]
+        }
+    ]);
+    return permissionAction;
 }

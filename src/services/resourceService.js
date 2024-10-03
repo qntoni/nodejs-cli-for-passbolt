@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import httpsAgent from '../libs/httpsAgent.js';
 import logger from "../libs/logger.js";
 
-class ResourceManagerService {
+class ResourceService {
     constructor(serverUrl, sessionCookie, csrfToken) {
         this.serverUrl = serverUrl;
         this.sessionCookie = sessionCookie;
@@ -195,4 +195,4 @@ class ResourceManagerService {
     }
 }
 
-export default ResourceManagerService;
+export default ResourceService;
