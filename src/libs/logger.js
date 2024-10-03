@@ -7,7 +7,6 @@ if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
 }
 
-// Configure winston logger
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(

@@ -1,22 +1,16 @@
 import openpgp from 'openpgp';
-import fetch, { Headers } from 'node-fetch';
-import { promises as fs } from 'fs';
-import { generateToken, _fetchPost } from '../lib/utils.js';
+import fetch, {Headers} from 'node-fetch';
+import {promises as fs} from 'fs';
+import {_fetchPost, generateToken} from '../libs/utils.js';
 import config from '../../config/default.js';
-import httpsAgent from '../lib/httpsAgent.js';
-import logger from "../lib/logger.js";
+import httpsAgent from '../libs/httpsAgent.js';
+import logger from "../libs/logger.js";
 
-class GpgAuth {
-    constructor(
-        serverUrl = config.serverUrl,
-        privateKeyPath = config.privateKeyPath,
-        privateKeyPassphrase = config.privateKeyPassphrase,
-        URL_LOGIN = config.URL_LOGIN
-    ) {
+class GpgAuthService {
+    constructor(serverUrl = config.serverUrl, privateKeyPath = config.privateKeyPath, privateKeyPassphrase = config.privateKeyPassphrase) {
         this.serverUrl = serverUrl;
         this.privateKeyPath = privateKeyPath;
         this.privateKeyPassphrase = privateKeyPassphrase;
-        this.URL_LOGIN = URL_LOGIN;
         this.privateKey = {};
         this.csrfToken = null;
         this.sessionId = null;
@@ -47,15 +41,12 @@ class GpgAuth {
     }
 
     async getServerKey() {
-        let myHeaders = new Headers();
-        myHeaders.append('Content-Type', 'text/plain; charset=UTF-8');
-
-        const response = await fetch(this.serverUrl + '/auth/verify.json', { headers: myHeaders, agent: httpsAgent });
+        const headers = new Headers({ 'Content-Type': 'text/plain; charset=UTF-8' });
+        const response = await fetch(this.serverUrl + '/auth/verify.json', { headers, agent: httpsAgent });
         const responseBody = await response.json();
         this.serverKey = responseBody.body;
-
-        const serverPublicKey = await openpgp.readKey({ armoredKey: this.serverKey.keydata });
-        this.serverKey.info = serverPublicKey;
+        this.serverKey.info = await openpgp.readKey({armoredKey: this.serverKey.keydata});
+        logger.info("Server public key fetched and parsed.");
     }
 
     async stage0() {
@@ -72,13 +63,14 @@ class GpgAuth {
             'data[gpg_auth][server_verify_token]': encryptedToken,
         };
 
-        const response = await this._fetchPost(this.serverUrl + '/auth/verify.json', postParams);
+        const response = await _fetchPost(this.serverUrl + '/auth/verify.json', postParams);
         const retrievedToken = response.headers.get('X-GPGAuth-Verify-Response');
 
         if (retrievedToken !== token) {
             throw new Error('Stage 0: Tokens mismatch');
         }
 
+        logger.info("Stage 0 completed successfully.");
         return token;
     }
 
@@ -87,17 +79,18 @@ class GpgAuth {
             'data[gpg_auth][keyid]': this.privateKey.info.getFingerprint(),
         };
 
-        const response = await this._fetchPost(this.serverUrl + '/auth/login.json', postParams);
+        const response = await _fetchPost(this.serverUrl + '/auth/login.json', postParams);
         const encryptedToken = decodeURIComponent(response.headers.get('X-GPGAuth-User-Auth-Token'))
             .replace(/\\/g, '')
             .replace(/-----BEGIN\+PGP\+MESSAGE-----/, '-----BEGIN PGP MESSAGE-----')
             .replace(/-----END\+PGP\+MESSAGE-----/, '-----END PGP MESSAGE-----');
 
-        const { data: decryptedToken, signatures } = await openpgp.decrypt({
+        const { data: decryptedToken } = await openpgp.decrypt({
             message: await openpgp.readMessage({ armoredMessage: encryptedToken }),
             decryptionKeys: this.privateKey.info,
         });
 
+        logger.info("Stage 1A completed successfully.");
         return decryptedToken;
     }
 
@@ -107,7 +100,7 @@ class GpgAuth {
             'data[gpg_auth][user_token_result]': token,
         };
 
-        const response = await this._fetchPost(this.serverUrl + '/auth/login.json', postParams);
+        const response = await _fetchPost(this.serverUrl + '/auth/login.json', postParams);
         const status = response.headers.get('X-GPGAuth-Progress');
         const authenticated = response.headers.get('X-GPGAuth-Authenticated');
 
@@ -120,6 +113,7 @@ class GpgAuth {
         this.sessionId = matches ? matches[1] : null;
 
         await this.getCsrfToken();
+        logger.info("Stage 1B completed successfully.");
     }
 
     async getCsrfToken() {
@@ -129,7 +123,7 @@ class GpgAuth {
             const matches = cookieHeader.match(/csrfToken=([^;]*);/);
             this.csrfToken = matches ? matches[1] : null;
         }
-        logger.info(`Retrieved CSRF Token: ${this.csrfToken}`);
+        logger.info(`CSRF token retrieved: ${this.csrfToken}`);
         return this.csrfToken;
     }
 
@@ -138,21 +132,17 @@ class GpgAuth {
         if (addCsrfToken && this.csrfToken) {
             cookie += `; csrfToken=${this.csrfToken}`;
         }
-        logger.info(`Generated Cookie: ${cookie}`);
+        logger.info("Cookie generated successfully.");
         return cookie;
     }
 
     async login() {
         await this.initialize();
-        await this.stage0();
-        const token = await this.stage1A();
-        await this.stage1B(token);
-        logger.info(`Logged in with Session ID: ${this.sessionId}, CSRF Token: ${this.csrfToken}`);
-    }
-
-    async _fetchPost(url, postParams) {
-        return await _fetchPost(url, postParams, httpsAgent);
+        const token = await this.stage0();
+        const decryptedToken = await this.stage1A();
+        await this.stage1B(decryptedToken);
+        logger.info(`Logged in successfully. Session ID: ${this.sessionId}, CSRF Token: ${this.csrfToken}`);
     }
 }
 
-export default GpgAuth;
+export default GpgAuthService;
