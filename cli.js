@@ -1,19 +1,7 @@
 import inquirer from 'inquirer';
 import GpgAuth from "./src/models/gpgAuth.js";
 import ResourceManager from "./src/models/resourceManager.js";
-import winston from 'winston';
-
-const logger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.printf(({ timestamp, level, message }) => `${timestamp} ${level}: ${message}`)
-    ),
-    transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: 'app.log' })
-    ]
-});
+import logger from './src/lib/logger.js';
 
 async function main() {
     logger.info("Starting GPG authentication...");

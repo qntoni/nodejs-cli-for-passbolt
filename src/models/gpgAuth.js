@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import { generateToken, _fetchPost } from '../lib/utils.js';
 import config from '../../config/default.js';
 import httpsAgent from '../lib/httpsAgent.js';
+import logger from "../lib/logger.js";
 
 class GpgAuth {
     constructor(
@@ -25,10 +26,10 @@ class GpgAuth {
         try {
             this.privateKey.keydata = await fs.readFile(this.privateKeyPath, 'utf8');
             this.privateKey.passphrase = this.privateKeyPassphrase;
-            console.log("Private key and passphrase loaded successfully");
+            logger.info("Private key and passphrase loaded successfully");
             await this.initKeyring();
         } catch (error) {
-            console.error(`Error initializing: ${error.message}`);
+            logger.error(`Error initializing: ${error.message}`);
             throw error;
         }
     }
@@ -38,9 +39,9 @@ class GpgAuth {
             let privateKey = await openpgp.readKey({ armoredKey: this.privateKey.keydata });
             privateKey = await openpgp.decryptKey({ privateKey, passphrase: this.privateKey.passphrase });
             this.privateKey.info = privateKey;
-            console.log("Private key decrypted successfully");
+            logger.info("Private key decrypted successfully");
         } catch (error) {
-            console.error(`Error decrypting private key: ${error.message}`);
+            logger.error(`Error decrypting private key: ${error.message}`);
             throw error;
         }
     }
@@ -128,7 +129,7 @@ class GpgAuth {
             const matches = cookieHeader.match(/csrfToken=([^;]*);/);
             this.csrfToken = matches ? matches[1] : null;
         }
-        console.log(`Retrieved CSRF Token: ${this.csrfToken}`);
+        logger.info(`Retrieved CSRF Token: ${this.csrfToken}`);
         return this.csrfToken;
     }
 
@@ -137,7 +138,7 @@ class GpgAuth {
         if (addCsrfToken && this.csrfToken) {
             cookie += `; csrfToken=${this.csrfToken}`;
         }
-        console.log(`Generated Cookie: ${cookie}`);
+        logger.info(`Generated Cookie: ${cookie}`);
         return cookie;
     }
 
@@ -146,7 +147,7 @@ class GpgAuth {
         await this.stage0();
         const token = await this.stage1A();
         await this.stage1B(token);
-        console.log(`Logged in with Session ID: ${this.sessionId}, CSRF Token: ${this.csrfToken}`);
+        logger.info(`Logged in with Session ID: ${this.sessionId}, CSRF Token: ${this.csrfToken}`);
     }
 
     async _fetchPost(url, postParams) {
