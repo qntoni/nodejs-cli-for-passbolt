@@ -1,84 +1,53 @@
-import inquirer from 'inquirer';
-import GpgAuth from "./src/models/gpgAuth.js";
-import ResourceManager from "./src/models/resourceManager.js";
-import winston from 'winston';
-
-const logger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.printf(({ timestamp, level, message }) => `${timestamp} ${level}: ${message}`)
-    ),
-    transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: 'app.log' })
-    ]
-});
+import { handleJwtAuth, handleLogout } from './src/controllers/jwtAuthController.js';
+import { handleResourceMenu } from './src/controllers/resourceController.js';
+import { handlePermissionMenu } from './src/controllers/permissionController.js';
+import { promptLoggingOutMessage, promptMainMenu } from './src/helpers/promptHelper.js';
+import logger from './src/libs/logger.js';
+import dotenv from "dotenv";
 
 async function main() {
-    logger.info("Starting GPG authentication...");
-    const gpgAuth = new GpgAuth();
     try {
-        await gpgAuth.login();
-        logger.info("GPG authentication successful.");
-    } catch (error) {
-        logger.error(`Login failed: ${error.message}`);
-        return;
-    }
 
-    const resourceManager = new ResourceManager(gpgAuth.serverUrl, gpgAuth.getCookie(true), gpgAuth.csrfToken, logger);
-    logger.info("Prompting user for action...");
-    const { action } = await inquirer.prompt([
-        {
-            type: 'list',
-            name: 'action',
-            message: 'What do you want to do?',
-            choices: [
-                { name: 'Display all the resources', value: 'all_resources' },
-                { name: 'Remove permissions from a group in a specific folder', value: 'remove_permissions' },
-            ]
+        const passphrase = process.env.PRIVATE_KEY_PASSPHRASE;
+        if (!passphrase) {
+            throw new Error("Passphrase for private key is missing.");
         }
-    ]);
 
-    logger.info(`User selected action: ${action}`);
-    switch (action) {
-        case 'all_resources':
-            try {
-                logger.info("Fetching all resources...");
-                const resources = await resourceManager.getAllResources();
-                logger.info("Resources fetched successfully:");
-                logger.info(JSON.stringify(resources.body, null, 2));
-            } catch (error) {
-                logger.error(`Failed to retrieve resources: ${error.message}`);
+        const jwtAuth = await handleJwtAuth(passphrase);
+
+        logger.info(`JWT Auth details: AccessToken=${jwtAuth.accessToken}, RefreshToken=${jwtAuth.refreshToken}`);
+
+        let continueApp = true;
+
+        while (continueApp) {
+            const mainMenuAction = await promptMainMenu();
+
+            switch (mainMenuAction) {
+                case 'resources':
+                    await handleResourceMenu(jwtAuth);
+                    break;
+
+                case 'permissions':
+                    await handlePermissionMenu(jwtAuth);
+                    break;
+
+                case 'logout':
+                    await promptLoggingOutMessage();
+                    await handleLogout(jwtAuth);
+                    logger.info('User has logged out.');
+                    continueApp = false;
+                    break;
+
+                default:
+                    logger.info('Exiting CLI.');
+                    continueApp = false;
             }
-            break;
-
-        case 'remove_permissions':
-            try {
-                logger.info("Prompting user for subfolder and group to remove...");
-                const { subfolder, groupToRemove } = await inquirer.prompt([
-                    {
-                        type: 'input',
-                        name: 'subfolder',
-                        message: 'Which subfolders do you want to take control of?',
-                    },
-                    {
-                        type: 'input',
-                        name: 'groupToRemove',
-                        message: 'Which group do you want to remove permissions for?',
-                    }
-                ]);
-
-                logger.info(`Subfolder: ${subfolder.trim()}, Group to Remove: ${groupToRemove.trim()}`);
-                await resourceManager.removePermissionsFromGroup(subfolder.trim(), groupToRemove.trim());
-                logger.info(`Permissions updated successfully.`);
-            } catch (error) {
-                logger.error(`Failed to remove permissions: ${error.message}`);
-            }
-            break;
+        }
+    } catch (error) {
+        logger.error(`Error occurred: ${error.message}`);
     }
 }
 
 main().catch(error => {
-    logger.error(`Error: ${error.message}`);
+    logger.error(`Critical Error: ${error.message}`);
 });
