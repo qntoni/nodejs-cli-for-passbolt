@@ -15,7 +15,6 @@ class JwtAuthService {
     async login(challenge, passphrase) {
         try {
             logger.info('Performing JWT login...');
-            console.log('Unencrypted challenge:', challenge);
 
             const encryptedChallenge = await encryptMessage(challenge, passphrase);
             logger.info(`Encrypted challenge: ${encryptedChallenge}`);

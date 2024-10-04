@@ -1,6 +1,8 @@
 import ResourceManagerService from "../services/resourceService.js";
 import logger from "../libs/logger.js";
 import { promptResourceMenu } from '../helpers/promptHelper.js';
+import Table from 'cli-table3';
+
 
 export async function handleResourceMenu(jwtAuth) {
     logger.info(`Using serverUrl: ${jwtAuth.serverUrl}`);
@@ -17,7 +19,24 @@ export async function handleResourceMenu(jwtAuth) {
         switch (resourceAction) {
             case 'all_resources':
                 const resources = await resourceManager.getAllResources();
-                console.log(JSON.stringify(resources.body, null, 2));
+
+                const table = new Table({
+                    head: ['ID', 'Name', 'Created By', 'Modified By', 'Created', 'Modified'],
+                    colWidths: [40, 20, 36, 36, 25, 25],
+                });
+
+                resources.body.forEach(resource => {
+                    table.push([
+                        resource.id,
+                        resource.name,
+                        resource.created_by,
+                        resource.modified_by,
+                        resource.created,
+                        resource.modified
+                    ]);
+                });
+
+                console.log(table.toString());
                 break;
 
             case 'search_by_name':
