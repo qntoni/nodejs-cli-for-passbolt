@@ -16,6 +16,44 @@ export async function promptMainMenu() {
     return action;
 }
 
+export async function promptSearchByName() {
+    const { resourceName } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'resourceName',
+            message: 'Enter the name of the resource to search for:'
+        }
+    ]);
+    return resourceName;
+}
+
+export async function promptSearchByDate() {
+    const { startDate, endDate } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'startDate',
+            message: 'Please enter the start date (YYYY-MM-DD):',
+        },
+        {
+            type: 'input',
+            name: 'endDate',
+            message: 'Please enter the end date (YYYY-MM-DD):',
+        }
+    ]);
+    return { startDate, endDate };
+}
+
+export async function promptSearchByOwner() {
+    const { owner } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'owner',
+            message: 'Please enter the owner username to search for:',
+        }
+    ]);
+    return owner;
+}
+
 export async function promptRemovePermissions() {
     const { subfolder, groupToRemove } = await inquirer.prompt([
         {
@@ -41,7 +79,8 @@ export async function promptResourceMenu() {
             choices: [
                 { name: 'Display all resources', value: 'all_resources' },
                 { name: 'Search a resource by name', value: 'search_by_name' },
-                { name: 'Search a resource by date', value: 'search_by_date' },
+                { name: 'Search a resource by date range', value: 'search_by_date' },
+                { name: 'Search a resource by owner', value: 'search_by_owner' },
                 { name: 'Back to main menu', value: 'back' }
             ]
         }
