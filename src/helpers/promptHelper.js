@@ -54,6 +54,18 @@ export async function promptSearchByOwner() {
     return owner;
 }
 
+export async function promptTotpCode() {
+    const { totpCode } = await inquirer.prompt([
+        {
+            type: 'input',
+            name: 'totpCode',
+            message: 'Please enter your TOTP code:',
+        },
+    ]);
+    return totpCode;
+}
+
+
 export async function promptRemovePermissions() {
     const { subfolder, groupToRemove } = await inquirer.prompt([
         {

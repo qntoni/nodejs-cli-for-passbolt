@@ -3,6 +3,8 @@ import config from '../../config/default.js';
 import logger from '../libs/logger.js';
 import httpsAgent from '../libs/httpsAgent.js';
 import {decryptMessage, encryptMessage} from "../helpers/encryptionHelper.js";
+import MfaService from "./mfaService.js";
+import {promptTotpCode} from "../helpers/promptHelper.js";
 
 class JwtAuthService {
     constructor() {
@@ -42,6 +44,17 @@ class JwtAuthService {
 
                 if (!this.accessToken || !this.refreshToken) {
                     throw new Error('Failed to retrieve tokens from decrypted challenge.');
+                }
+
+                const mfaService = new MfaService(this.accessToken);
+                const mfaCheck = await mfaService.checkMfaRequirement('totp');
+
+                if (mfaCheck) {
+                    const totpCode = await promptTotpCode();
+                    await mfaService.verifyTotp(totpCode);
+                    logger.info('MFA TOTP verified successfully.');
+                } else {
+                    logger.info('No MFA required, continuing login...');
                 }
 
                 logger.info('JWT login successful. Tokens obtained.');
