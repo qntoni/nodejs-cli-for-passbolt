@@ -1,6 +1,6 @@
 import { handleResourceMenu } from './src/controllers/resourceController.js';
 import { handlePermissionMenu } from './src/controllers/permissionController.js';
-import { promptMainMenu } from './src/helpers/promptHelper.js';
+import {promptLoggingOutMessage, promptMainMenu} from './src/helpers/promptHelper.js';
 import logger from './src/libs/logger.js';
 import { handleGpgAuth } from './src/controllers/gpgAuthController.js';
 
@@ -24,6 +24,7 @@ async function main() {
                     break;
 
                 case 'logout':
+                    await promptLoggingOutMessage();
                     logger.info('User has logged out.');
                     continueApp = false;
                     break;

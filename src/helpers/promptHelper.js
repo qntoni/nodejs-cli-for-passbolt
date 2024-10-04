@@ -49,6 +49,10 @@ export async function promptResourceMenu() {
     return resourceAction;
 }
 
+export async function promptLoggingOutMessage() {
+    console.log("Logging out...")
+}
+
 export async function promptPermissionMenu() {
     const { permissionAction } = await inquirer.prompt([
         {
