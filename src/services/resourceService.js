@@ -14,7 +14,7 @@ class ResourceService {
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
-            cookie: this.sessionCookie
+            'Authorization': `Bearer ${this.sessionCookie}`
         };
         const response = await fetch(`${this.serverUrl}/resources.json`, {
             method: 'GET',
@@ -37,7 +37,7 @@ class ResourceService {
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
-            cookie: this.sessionCookie
+            'Authorization': `Bearer ${this.sessionCookie}`
         };
         const response = await fetch(`${this.serverUrl}/folders.json`, {
             method: 'GET',
@@ -57,7 +57,7 @@ class ResourceService {
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
-            cookie: this.sessionCookie
+            'Authorization': `Bearer ${this.sessionCookie}`
         };
         const response = await fetch(url, {
             method: 'GET',
@@ -77,7 +77,7 @@ class ResourceService {
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
-            cookie: this.sessionCookie
+            'Authorization': `Bearer ${this.sessionCookie}`
         };
         const response = await fetch(url, {
             method: 'GET',
@@ -97,7 +97,7 @@ class ResourceService {
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
-            cookie: this.sessionCookie
+            'Authorization': `Bearer ${this.sessionCookie}`
         };
         const payload = {
             permissions: permissionsToRemove.map(permission => ({
@@ -180,7 +180,7 @@ class ResourceService {
         const headers = {
             'Content-Type': 'application/json',
             'X-CSRF-Token': this.csrfToken,
-            cookie: this.sessionCookie
+            'Authorization': `Bearer ${this.sessionCookie}`
         };
         const response = await fetch(url, {
             method: 'GET',

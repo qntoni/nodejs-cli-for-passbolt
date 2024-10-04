@@ -2,8 +2,13 @@ import ResourceManagerService from "../services/resourceService.js";
 import logger from "../libs/logger.js";
 import { promptResourceMenu } from '../helpers/promptHelper.js';
 
-export async function handleResourceMenu(gpgAuth) {
-    const resourceManager = new ResourceManagerService(gpgAuth.serverUrl, gpgAuth.getCookie(true), gpgAuth.csrfToken);
+export async function handleResourceMenu(jwtAuth) {
+    logger.info(`Using serverUrl: ${jwtAuth.serverUrl}`);
+    const resourceManager = new ResourceManagerService(
+        jwtAuth.serverUrl,
+        `Bearer ${jwtAuth.accessToken}`,
+        jwtAuth.csrfToken
+    );
 
     let continueLoop = true;
     while (continueLoop) {
